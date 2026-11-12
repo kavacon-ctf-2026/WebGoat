@@ -1,5 +1,3 @@
-=== Let's try
+=== Log spoofing demonstration
 
-- The goal of this challenge is to make it look like username "admin" succeeded in logging in.
-- The red area below shows what will be logged in the web server's log file.
-- Want to go beyond? Try to elevate your attack by adding a script to the log file.
+This lesson simulates a log display; it does not write to a server log. Submit a normal one-line username to confirm the safe path. The server rejects CR and LF so a request cannot forge another log entry, and it renders the submitted text as text so it cannot inject HTML.

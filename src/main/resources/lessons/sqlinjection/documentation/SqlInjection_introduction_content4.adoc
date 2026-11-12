@@ -10,4 +10,5 @@ If an attacker successfully "injects" DCL type SQL commands into a database, he 
 * REVOKE - withdraw user privileges that were previously given using GRANT
 
 
-Try to grant rights to the table `grant_rights` to user `unauthorized_user`:
+The conceptual example is `GRANT SELECT ON grant_rights TO unauthorized_user;`.
+This page is a read-only simulation. WebGoat does not accept or execute DCL supplied through the form, and no database permissions will be changed. Select the `GRANT SELECT` preview to acknowledge the example; privilege changes must be handled by trusted database administration code.

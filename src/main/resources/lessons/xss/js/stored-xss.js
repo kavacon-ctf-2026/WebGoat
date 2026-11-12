@@ -8,11 +8,22 @@ $(document).ready(function () {
             contentType: "application/json",
             dataType: 'json'
         }).then(
-            function () {
+            function (result) {
+                if (result.feedback) {
+                    $('#stored-comment-feedback').text(polyglot.t(result.feedback) || '');
+                }
+                if (result.attemptWasMade && (result.assignmentCompleted || result.lessonCompleted)) {
+                    $('#stored-comment-assignment i').removeClass('hidden');
+                }
+                if (result.feedback === 'xss-stored-comment-invalid') {
+                    return;
+                }
                 getChallenges();
                 $("#commentInput").val('');
             }
-        )
+        ).fail(function () {
+            $('#stored-comment-feedback').text('The comment could not be saved. Please try again.');
+        });
     })
 
     var html = '<li class="comment">' +
@@ -34,9 +45,10 @@ $(document).ready(function () {
         $("#list").empty();
         $.get('CrossSiteScriptingStored/stored-xss', function (result, status) {
             for (var i = 0; i < result.length; i++) {
-                var comment = html.replace('USER', result[i].user);
-                comment = comment.replace('DATETIME', result[i].dateTime);
-                comment = comment.replace('COMMENT', result[i].text);
+                var comment = $(html);
+                comment.find('.user').text(result[i].user);
+                comment.find('.time').text(result[i].dateTime);
+                comment.find('p').text(result[i].text);
                 $("#list").append(comment);
             }
 

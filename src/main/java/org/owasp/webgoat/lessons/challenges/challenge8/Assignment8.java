@@ -4,28 +4,29 @@
  */
 package org.owasp.webgoat.lessons.challenges.challenge8;
 
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
 import org.owasp.webgoat.container.assignments.AttackResult;
 import org.owasp.webgoat.lessons.challenges.Flags;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@Slf4j
 @RequiredArgsConstructor
 public class Assignment8 implements AssignmentEndpoint {
 
-  private static final Map<Integer, Integer> votes = new HashMap<>();
+  private static final Map<Integer, Integer> votes = new ConcurrentHashMap<>();
 
   static {
     votes.put(1, 400);
@@ -37,22 +38,25 @@ public class Assignment8 implements AssignmentEndpoint {
 
   private final Flags flags;
 
-  @GetMapping(value = "/challenge/8/vote/{stars}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @PostMapping(value = "/challenge/8/vote/{stars}", produces = MediaType.APPLICATION_JSON_VALUE)
   @ResponseBody
   public ResponseEntity<?> vote(
-      @PathVariable(value = "stars") int nrOfStars, HttpServletRequest request) {
-    // Simple implementation of VERB Based Authentication
-    String msg = "";
-    if (request.getMethod().equals("GET")) {
-      var json =
-          Map.of("error", true, "message", "Sorry but you need to login first in order to vote");
-      return ResponseEntity.status(200).body(json);
+      @PathVariable(value = "stars") int nrOfStars, Authentication authentication) {
+    if (authentication == null
+        || !authentication.isAuthenticated()
+        || authentication instanceof AnonymousAuthenticationToken) {
+      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+          .body(Map.of("error", true, "message", "Please log in before voting."));
     }
-    Integer allVotesForStar = votes.getOrDefault(nrOfStars, 0);
-    votes.put(nrOfStars, allVotesForStar + 1);
+    if (nrOfStars < 1 || nrOfStars > 5) {
+      return ResponseEntity.badRequest()
+          .body(Map.of("error", true, "message", "Choose a rating from 1 to 5."));
+    }
+    votes.merge(nrOfStars, 1, Integer::sum);
     return ResponseEntity.ok()
         .header("X-FlagController", "Thanks for voting, your flag is: " + flags.getFlag(8))
-        .build();
+        .contentType(MediaType.APPLICATION_JSON)
+        .body(Map.of("error", false, "message", "Thanks for voting."));
   }
 
   @GetMapping("/challenge/8/votes/")

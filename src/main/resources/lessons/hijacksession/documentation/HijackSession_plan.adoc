@@ -2,9 +2,12 @@
 
 == Concept
 
-Application developers who develop their own session IDs frequently forget to incorporate the complexity and randomness necessary for security. If the user specific session ID is not complex and random, then the application is highly susceptible to session-based brute force attacks.
-
+Predictable session identifiers can let an attacker guess another user's active session. Secure
+session identifiers need high entropy, server-side validation, a limited lifetime, and binding to
+the authenticated account.
 
 == Goals
 
-Gain access to an authenticated session belonging to someone else.
+Inspect the lesson's opaque session cookie and verify that guessed, expired, or cross-account
+identifiers do not authenticate as another user. The fixed lesson does not provide a session
+prediction exploit.

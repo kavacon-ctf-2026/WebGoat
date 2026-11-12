@@ -19,13 +19,11 @@ import org.springframework.web.context.annotation.ApplicationScope;
  * @author Angel Olle Blazquez
  */
 
-// weak id value and mechanism
-
 @ApplicationScope
 @Component
 public class HijackSessionAuthenticationProvider implements AuthenticationProvider<Authentication> {
 
-  private Queue<String> sessions = new LinkedList<>();
+  private final Queue<String> sessions = new LinkedList<>();
   private static long id = new Random().nextLong() & Long.MAX_VALUE;
   protected static final int MAX_SESSIONS = 50;
 
@@ -41,8 +39,7 @@ public class HijackSessionAuthenticationProvider implements AuthenticationProvid
       return AUTHENTICATION_SUPPLIER.get();
     }
 
-    if (StringUtils.isNotEmpty(authentication.getId())
-        && sessions.contains(authentication.getId())) {
+    if (StringUtils.isNotEmpty(authentication.getId()) && containsSession(authentication.getId())) {
       authentication.setAuthenticated(true);
       return authentication;
     }
@@ -64,14 +61,18 @@ public class HijackSessionAuthenticationProvider implements AuthenticationProvid
     }
   }
 
-  protected boolean addSession(String sessionId) {
+  private synchronized boolean containsSession(String sessionId) {
+    return sessions.contains(sessionId);
+  }
+
+  protected synchronized boolean addSession(String sessionId) {
     if (sessions.size() >= MAX_SESSIONS) {
       sessions.remove();
     }
     return sessions.add(sessionId);
   }
 
-  protected int getSessionsSize() {
+  protected synchronized int getSessionsSize() {
     return sessions.size();
   }
 }

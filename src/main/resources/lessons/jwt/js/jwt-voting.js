@@ -1,13 +1,17 @@
 $(document).ready(function () {
-    loginVotes('Guest');
+    loginVotes();
 })
 
-function loginVotes(user) {
-    $("#name").text(user);
+function loginVotes() {
     $.ajax({
-        url: 'JWT/votings/login?user=' + user,
+        type: 'POST',
+        url: 'JWT/votings/login',
         contentType: "application/json"
-    }).always(function () {
+    }).done(function (result) {
+        $("#name").text(result.user);
+        getVotings();
+    }).fail(function () {
+        $("#name").text('Guest');
         getVotings();
     })
 }

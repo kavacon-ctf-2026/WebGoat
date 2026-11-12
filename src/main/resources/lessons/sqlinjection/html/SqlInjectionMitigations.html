@@ -177,8 +177,8 @@
             <div class="form-group">
                 <div class="input-group">
                     <div class="input-group-addon">IP address webgoat-prd server:</div>
-                    <input type="text" class="form-control" id="ip" name="ip"
-                           placeholder="192.1.0.12"/>
+                    <input type="text" class="form-control" id="ip" name="ip" maxlength="15" required="required"
+                           pattern="(?:[0-9]{1,3}\.){3}[0-9]{1,3}" placeholder="Enter the displayed IPv4 address"/>
                 </div>
                 <div class="input-group" style="margin-top: 10px">
                     <button type="submit" class="btn btn-primary">Submit</button>

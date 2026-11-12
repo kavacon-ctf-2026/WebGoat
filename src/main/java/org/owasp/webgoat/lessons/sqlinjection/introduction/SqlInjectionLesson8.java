@@ -4,14 +4,17 @@
  */
 package org.owasp.webgoat.lessons.sqlinjection.introduction;
 
-import static java.sql.ResultSet.CONCUR_UPDATABLE;
-import static java.sql.ResultSet.TYPE_SCROLL_SENSITIVE;
 import static org.owasp.webgoat.container.assignments.AttackResultBuilder.failed;
 import static org.owasp.webgoat.container.assignments.AttackResultBuilder.success;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Set;
 import org.owasp.webgoat.container.LessonDataSource;
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
 import org.owasp.webgoat.container.assignments.AssignmentHints;
@@ -32,6 +35,8 @@ import org.springframework.web.bind.annotation.RestController;
     })
 public class SqlInjectionLesson8 implements AssignmentEndpoint {
 
+  private static final Set<String> ALLOWED_LAST_NAMES = Set.of("Smith");
+
   private final LessonDataSource dataSource;
 
   public SqlInjectionLesson8(LessonDataSource dataSource) {
@@ -45,55 +50,33 @@ public class SqlInjectionLesson8 implements AssignmentEndpoint {
   }
 
   protected AttackResult injectableQueryConfidentiality(String name, String auth_tan) {
-    StringBuilder output = new StringBuilder();
-    String query =
-        "SELECT * FROM employees WHERE last_name = '"
-            + name
-            + "' AND auth_tan = '"
-            + auth_tan
-            + "'";
+    if (name == null
+        || !ALLOWED_LAST_NAMES.contains(name)
+        || auth_tan == null
+        || auth_tan.length() != 6) {
+      return failed(this).feedback("sql-injection.8.no.results").build();
+    }
 
     try (Connection connection = dataSource.getConnection()) {
-      try {
-        Statement statement =
-            connection.createStatement(
-                ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
-        log(connection, query);
-        ResultSet results = statement.executeQuery(query);
-
-        if (results.getStatement() != null) {
-          if (results.first()) {
-            output.append(generateTable(results));
-            results.last();
-
-            if (results.getRow() > 1) {
-              // more than one record, the user succeeded
-              return success(this)
-                  .feedback("sql-injection.8.success")
-                  .output(output.toString())
-                  .build();
-            } else {
-              // only one record
-              return failed(this).feedback("sql-injection.8.one").output(output.toString()).build();
-            }
-
-          } else {
-            // no results
-            return failed(this).feedback("sql-injection.8.no.results").build();
+      log(connection, "Employee lookup");
+      try (PreparedStatement statement =
+          connection.prepareStatement(
+              "SELECT department FROM employees WHERE first_name = 'John'"
+                  + " AND last_name = ? AND auth_tan = ?")) {
+        statement.setString(1, name);
+        statement.setString(2, auth_tan);
+        try (ResultSet results = statement.executeQuery()) {
+          if (results.next()) {
+            return success(this)
+                .feedback("sql-injection.8.success")
+                .output("Your department: " + results.getString("department"))
+                .build();
           }
-        } else {
-          return failed(this).build();
+          return failed(this).feedback("sql-injection.8.no.results").build();
         }
-      } catch (SQLException e) {
-        return failed(this)
-            .output("<br><span class='feedback-negative'>" + e.getMessage() + "</span>")
-            .build();
       }
-
-    } catch (Exception e) {
-      return failed(this)
-          .output("<br><span class='feedback-negative'>" + e.getMessage() + "</span>")
-          .build();
+    } catch (SQLException e) {
+      return failed(this).feedback("sql-injection.8.no.results").build();
     }
   }
 
@@ -129,17 +112,15 @@ public class SqlInjectionLesson8 implements AssignmentEndpoint {
   }
 
   public static void log(Connection connection, String action) {
-    action = action.replace('\'', '"');
     Calendar cal = Calendar.getInstance();
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     String time = sdf.format(cal.getTime());
 
-    String logQuery =
-        "INSERT INTO access_log (time, action) VALUES ('" + time + "', '" + action + "')";
-
-    try {
-      Statement statement = connection.createStatement(TYPE_SCROLL_SENSITIVE, CONCUR_UPDATABLE);
-      statement.executeUpdate(logQuery);
+    try (PreparedStatement statement =
+        connection.prepareStatement("INSERT INTO access_log (time, action) VALUES (?, ?)")) {
+      statement.setString(1, time);
+      statement.setString(2, action);
+      statement.executeUpdate();
     } catch (SQLException e) {
       System.err.println(e.getMessage());
     }

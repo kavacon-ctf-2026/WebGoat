@@ -8,9 +8,10 @@ import static org.owasp.webgoat.container.assignments.AttackResultBuilder.failed
 import static org.owasp.webgoat.container.assignments.AttackResultBuilder.success;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.Map;
 import org.owasp.webgoat.container.LessonDataSource;
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
 import org.owasp.webgoat.container.assignments.AssignmentHints;
@@ -32,6 +33,12 @@ import org.springframework.web.bind.annotation.RestController;
     })
 public class SqlInjectionLesson10 implements AssignmentEndpoint {
 
+  private static final Map<String, String> ALLOWED_ACTION_FILTERS =
+      Map.of(
+          "all", "%",
+          "employee-lookups", "%Employee lookup%",
+          "salary-reviews", "%Salary review simulation%");
+
   private final LessonDataSource dataSource;
 
   public SqlInjectionLesson10(LessonDataSource dataSource) {
@@ -45,68 +52,28 @@ public class SqlInjectionLesson10 implements AssignmentEndpoint {
   }
 
   protected AttackResult injectableQueryAvailability(String action) {
-    StringBuilder output = new StringBuilder();
-    String query = "SELECT * FROM access_log WHERE action LIKE '%" + action + "%'";
+    String actionPattern = action == null ? null : ALLOWED_ACTION_FILTERS.get(action);
+    if (actionPattern == null) {
+      return failed(this).feedback("sql-injection.10.invalid-filter").build();
+    }
 
-    try (Connection connection = dataSource.getConnection()) {
-      try {
-        Statement statement =
-            connection.createStatement(
-                ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-        ResultSet results = statement.executeQuery(query);
-
-        if (results.getStatement() != null) {
-          results.first();
-          output.append(SqlInjectionLesson8.generateTable(results));
-          return failed(this)
-              .feedback("sql-injection.10.entries")
-              .output(output.toString())
+    String query = "SELECT COUNT(*) FROM access_log WHERE action LIKE ?";
+    try (Connection connection = dataSource.getConnection();
+        PreparedStatement statement = connection.prepareStatement(query)) {
+      statement.setString(1, actionPattern);
+      try (ResultSet results = statement.executeQuery()) {
+        if (results.next()) {
+          int matchingEvents = results.getInt(1);
+          return success(this)
+              .feedback("sql-injection.10.success")
+              .feedbackArgs(matchingEvents)
+              .output("Matching audit events: " + matchingEvents + ". The log table is unchanged.")
               .build();
-        } else {
-          if (tableExists(connection)) {
-            return failed(this)
-                .feedback("sql-injection.10.entries")
-                .output(output.toString())
-                .build();
-          } else {
-            return success(this).feedback("sql-injection.10.success").build();
-          }
-        }
-      } catch (SQLException e) {
-        if (tableExists(connection)) {
-          return failed(this)
-              .output(
-                  "<span class='feedback-negative'>"
-                      + e.getMessage()
-                      + "</span><br>"
-                      + output.toString())
-              .build();
-        } else {
-          return success(this).feedback("sql-injection.10.success").build();
         }
       }
-
-    } catch (Exception e) {
-      return failed(this)
-          .output("<span class='feedback-negative'>" + e.getMessage() + "</span>")
-          .build();
-    }
-  }
-
-  private boolean tableExists(Connection connection) {
-    try {
-      Statement stmt =
-          connection.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-      ResultSet results = stmt.executeQuery("SELECT * FROM access_log");
-      int cols = results.getMetaData().getColumnCount();
-      return (cols > 0);
     } catch (SQLException e) {
-      String errorMsg = e.getMessage();
-      if (errorMsg.contains("object not found: ACCESS_LOG")) {
-        return false;
-      } else {
-        return true;
-      }
+      return failed(this).feedback("sql-injection.10.invalid-filter").build();
     }
+    return failed(this).feedback("sql-injection.10.invalid-filter").build();
   }
 }

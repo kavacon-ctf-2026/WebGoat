@@ -13,9 +13,7 @@ import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SigningKeyResolverAdapter;
-import io.jsonwebtoken.impl.TextCodec;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.security.SecureRandom;
 import org.apache.commons.lang3.StringUtils;
 import org.owasp.webgoat.container.LessonDataSource;
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
@@ -39,10 +37,18 @@ import org.springframework.web.bind.annotation.RestController;
 })
 @RequestMapping("/JWT/")
 public class JWTHeaderKIDEndpoint implements AssignmentEndpoint {
-  private final LessonDataSource dataSource;
+  private static final String TRUSTED_KEY_ID = "webgoat_key";
+  private static final byte[] TRUSTED_SIGNING_KEY = createTrustedSigningKey();
 
-  private JWTHeaderKIDEndpoint(LessonDataSource dataSource) {
-    this.dataSource = dataSource;
+  private JWTHeaderKIDEndpoint(LessonDataSource ignoredDataSource) {
+    // Keep constructor injection compatible with the lesson's existing configuration. The
+    // untrusted kid is no longer used to select a database row or construct a SQL query.
+  }
+
+  private static byte[] createTrustedSigningKey() {
+    byte[] key = new byte[32];
+    new SecureRandom().nextBytes(key);
+    return key;
   }
 
   @PostMapping("kid/follow/{user}")
@@ -60,35 +66,28 @@ public class JWTHeaderKIDEndpoint implements AssignmentEndpoint {
       return failed(this).feedback("jwt-invalid-token").build();
     } else {
       try {
-        final String[] errorMessage = {null};
         Jwt jwt =
             Jwts.parser()
                 .setSigningKeyResolver(
                     new SigningKeyResolverAdapter() {
                       @Override
                       public byte[] resolveSigningKeyBytes(JwsHeader header, Claims claims) {
-                        final String kid = (String) header.get("kid");
-                        try (var connection = dataSource.getConnection()) {
-                          ResultSet rs =
-                              connection
-                                  .createStatement()
-                                  .executeQuery(
-                                      "SELECT key FROM jwt_keys WHERE id = '" + kid + "'");
-                          while (rs.next()) {
-                            return TextCodec.BASE64.decode(rs.getString(1));
-                          }
-                        } catch (SQLException e) {
-                          errorMessage[0] = e.getMessage();
+                        final String kid = header.getKeyId();
+                        if (!TRUSTED_KEY_ID.equals(kid)
+                            || !"HS256".equals(header.getAlgorithm())) {
+                          throw new JwtException("Untrusted JWT key identifier or algorithm");
                         }
-                        return null;
+                        return TRUSTED_SIGNING_KEY.clone();
                       }
                     })
                 .parseClaimsJws(token);
-        if (errorMessage[0] != null) {
-          return failed(this).output(errorMessage[0]).build();
-        }
         Claims claims = (Claims) jwt.getBody();
-        String username = (String) claims.get("username");
+        if (!"WebGoat Token Builder".equals(claims.getIssuer())
+            || !"webgoat.org".equals(claims.getAudience())
+            || claims.getIssuedAt() == null) {
+          return failed(this).feedback("jwt-invalid-token").build();
+        }
+        String username = claims.get("username", String.class);
         if ("Jerry".equals(username)) {
           return failed(this).feedback("jwt-final-jerry-account").build();
         }
@@ -97,8 +96,8 @@ public class JWTHeaderKIDEndpoint implements AssignmentEndpoint {
         } else {
           return failed(this).feedback("jwt-final-not-tom").build();
         }
-      } catch (JwtException e) {
-        return failed(this).feedback("jwt-invalid-token").output(e.toString()).build();
+      } catch (RuntimeException e) {
+        return failed(this).feedback("jwt-invalid-token").build();
       }
     }
   }

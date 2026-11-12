@@ -1,8 +1,23 @@
 === Let's try
-The following input box receives a serialized object (a string) and it deserializes it.
+The following input box receives a serialized object and safely deserializes the lesson's limited task type. This secure version never executes a command from serialized data.
 
-```
-rO0ABXQAVklmIHlvdSBkZXNlcmlhbGl6ZSBtZSBkb3duLCBJIHNoYWxsIGJlY29tZSBtb3JlIHBvd2VyZnVsIHRoYW4geW91IGNhbiBwb3NzaWJseSBpbWFnaW5l
-```
+Create a `VulnerableTaskHolder` with the inert action string `sleep 5`, serialize it, and submit the URL-safe Base64 result. For example, using the class included with WebGoat:
 
-Try to change this serialized object in order to delay the page response for exactly 5 seconds.
+[source,java]
+----
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.util.Base64;
+import org.dummy.insecure.framework.VulnerableTaskHolder;
+
+var task = new VulnerableTaskHolder("lesson", "sleep 5");
+var bytes = new ByteArrayOutputStream();
+try (var out = new ObjectOutputStream(bytes)) {
+    out.writeObject(task);
+}
+String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes.toByteArray());
+----
+
+The server validates that exact demo action and marks the safe exercise complete without running it or waiting.
+
+The original timing challenge depended on executing a command during deserialization. That behavior has been removed; response time is not part of this exercise.

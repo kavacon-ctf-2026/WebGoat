@@ -1,2 +1,2 @@
-=== Change the request, so the server gets information from http://ifconfig.pro
-Click the button and figure out what happened.
+=== Fixed example
+Click the button to submit the fixed `http://ifconfig.pro` example address. This secure version returns a local example response and makes no outbound request. Other addresses are rejected.

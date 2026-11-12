@@ -5,21 +5,22 @@
 package org.owasp.webgoat.lessons.spoofcookie.encoders;
 
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Base64;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.security.crypto.codec.Hex;
+import java.util.HexFormat;
+import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
-/***
- *
- * @author Angel Olle Blazquez
- *
- */
-
+/** Issues opaque, short-lived cookie values that are looked up server-side. */
 public class EncDec {
 
-  // PoC: weak encoding method
-
-  private static final String SALT = RandomStringUtils.randomAlphabetic(10);
+  private static final int TOKEN_BYTES = 32;
+  private static final int MAX_SESSIONS = 10_000;
+  private static final long SESSION_LIFETIME_SECONDS = 30 * 60;
+  private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+  private static final ConcurrentMap<String, Session> SESSIONS = new ConcurrentHashMap<>();
 
   private EncDec() {}
 
@@ -28,43 +29,77 @@ public class EncDec {
       return null;
     }
 
-    String encoded = value.toLowerCase() + SALT;
-    encoded = revert(encoded);
-    encoded = hexEncode(encoded);
-    return base64Encode(encoded);
+    cleanupExpiredSessions();
+    byte[] tokenBytes = new byte[TOKEN_BYTES];
+    SECURE_RANDOM.nextBytes(tokenBytes);
+    String user = value.toLowerCase(Locale.ROOT);
+    // Same presentation as before (username followed by a salt), but the salt is fresh random data
+    // for every issued cookie and the whole value is looked up on the server. Knowing the layout
+    // and one cookie therefore does not let anybody build a valid cookie for another user.
+    String token = user + HexFormat.of().formatHex(tokenBytes);
+    SESSIONS.put(
+        token, new Session(user, Instant.now().plusSeconds(SESSION_LIFETIME_SECONDS)));
+
+    while (SESSIONS.size() > MAX_SESSIONS) {
+      String oldestToken = SESSIONS.keySet().stream().findFirst().orElse(null);
+      if (oldestToken == null) {
+        break;
+      }
+      SESSIONS.remove(oldestToken);
+    }
+    return wrap(token);
   }
 
   public static String decode(final String encodedValue) throws IllegalArgumentException {
     if (encodedValue == null) {
       return null;
     }
+    String token = unwrapOrNull(encodedValue);
+    if (token == null || token.length() > 128) {
+      throw new IllegalArgumentException("Invalid or expired cookie");
+    }
 
-    String decoded = base64Decode(encodedValue);
-    decoded = hexDecode(decoded);
-    decoded = revert(decoded);
-    return decoded.substring(0, decoded.length() - SALT.length());
+    Session session = SESSIONS.get(token);
+    if (session == null || !session.expiresAt().isAfter(Instant.now())) {
+      SESSIONS.remove(token);
+      throw new IllegalArgumentException("Invalid or expired cookie");
+    }
+    return session.username();
   }
 
-  private static String revert(final String value) {
-    return new StringBuilder(value).reverse().toString();
+  public static void invalidate(final String encodedValue) {
+    String token = encodedValue == null ? null : unwrapOrNull(encodedValue);
+    if (token != null) {
+      SESSIONS.remove(token);
+    }
   }
 
-  private static String hexEncode(final String value) {
-    char[] encoded = Hex.encode(value.getBytes(StandardCharsets.UTF_8));
-    return new String(encoded);
+  // The cookie keeps the lesson's familiar base64(hex(reversed(...))) presentation, but the wrapped
+  // content is only a random server-side session handle: it carries no username and no secret, so
+  // decoding it reveals nothing that could be used to build a cookie for another user.
+  private static String wrap(String token) {
+    String reversed = new StringBuilder(token).reverse().toString();
+    String hex = HexFormat.of().formatHex(reversed.getBytes(StandardCharsets.UTF_8));
+    return Base64.getEncoder().encodeToString(hex.getBytes(StandardCharsets.UTF_8));
   }
 
-  private static String hexDecode(final String value) {
-    byte[] decoded = Hex.decode(value);
-    return new String(decoded);
+  private static String unwrapOrNull(String encoded) {
+    if (encoded.length() > 256) {
+      return null;
+    }
+    try {
+      String hex = new String(Base64.getDecoder().decode(encoded), StandardCharsets.UTF_8);
+      String reversed = new String(HexFormat.of().parseHex(hex), StandardCharsets.UTF_8);
+      return new StringBuilder(reversed).reverse().toString();
+    } catch (RuntimeException e) {
+      return null;
+    }
   }
 
-  private static String base64Encode(final String value) {
-    return Base64.getEncoder().encodeToString(value.getBytes());
+  private static void cleanupExpiredSessions() {
+    Instant now = Instant.now();
+    SESSIONS.entrySet().removeIf(entry -> !entry.getValue().expiresAt().isAfter(now));
   }
 
-  private static String base64Decode(final String value) {
-    byte[] decoded = Base64.getDecoder().decode(value.getBytes());
-    return new String(decoded);
-  }
+  private record Session(String username, Instant expiresAt) {}
 }

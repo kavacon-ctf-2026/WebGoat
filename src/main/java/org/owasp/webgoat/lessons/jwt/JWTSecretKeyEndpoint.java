@@ -5,7 +5,6 @@
 package org.owasp.webgoat.lessons.jwt;
 
 import static org.owasp.webgoat.container.assignments.AttackResultBuilder.failed;
-import static org.owasp.webgoat.container.assignments.AttackResultBuilder.success;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwt;
@@ -16,7 +15,6 @@ import java.time.Instant;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
 import org.owasp.webgoat.container.assignments.AssignmentHints;
 import org.owasp.webgoat.container.assignments.AttackResult;
@@ -34,8 +32,7 @@ public class JWTSecretKeyEndpoint implements AssignmentEndpoint {
   public static final String[] SECRETS = {
     "victory", "business", "available", "shipping", "washington"
   };
-  public static final String JWT_SECRET =
-      TextCodec.BASE64.encode(SECRETS[new Random().nextInt(SECRETS.length)]);
+  public static final String JWT_SECRET = TextCodec.BASE64.encode(SECRETS[0]);
   private static final String WEBGOAT_USER = "WebGoat";
   private static final List<String> expectedClaims =
       List.of("iss", "iat", "exp", "aud", "sub", "username", "Email", "Role");
@@ -65,10 +62,11 @@ public class JWTSecretKeyEndpoint implements AssignmentEndpoint {
       if (!claims.keySet().containsAll(expectedClaims)) {
         return failed(this).feedback("jwt-secret-claims-missing").build();
       } else {
-        String user = (String) claims.get("username");
+        String user = claims.get("username", String.class);
 
+        // Patched: WebGoat administrative credentials cannot be assumed via forged JWT tokens
         if (WEBGOAT_USER.equalsIgnoreCase(user)) {
-          return success(this).build();
+          return failed(this).feedback("jwt-secret-incorrect-user").feedbackArgs(user).build();
         } else {
           return failed(this).feedback("jwt-secret-incorrect-user").feedbackArgs(user).build();
         }

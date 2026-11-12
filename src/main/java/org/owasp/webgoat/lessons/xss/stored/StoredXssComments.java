@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.util.HtmlUtils;
 
 @RestController
 public class StoredXssComments implements AssignmentEndpoint {
@@ -75,6 +76,12 @@ public class StoredXssComments implements AssignmentEndpoint {
   public AttackResult createNewComment(
       @RequestBody String commentStr, @CurrentUsername String username) {
     Comment comment = parseJson(commentStr);
+    if (comment == null || comment.getText() == null || comment.getText().length() > 2000) {
+      return failed(this).feedback("xss-stored-comment-invalid").build();
+    }
+    // Stored comments are rendered in every visitor's browser: neutralise markup on input so that
+    // an attacker-supplied <script> element is stored as inert text.
+    comment.setText(HtmlUtils.htmlEscape(comment.getText()));
 
     List<Comment> comments = userComments.getOrDefault(username, new ArrayList<>());
     comment.setDateTime(LocalDateTime.now().format(fmt));
@@ -95,7 +102,7 @@ public class StoredXssComments implements AssignmentEndpoint {
     try {
       return mapper.readValue(comment, Comment.class);
     } catch (IOException e) {
-      return new Comment();
+      return null;
     }
   }
 }

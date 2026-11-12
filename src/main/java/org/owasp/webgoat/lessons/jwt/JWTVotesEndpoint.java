@@ -14,12 +14,13 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.impl.TextCodec;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Duration;
 import java.time.Instant;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,11 +34,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.json.MappingJacksonValue;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -52,11 +54,16 @@ import org.springframework.web.bind.annotation.RestController;
 })
 public class JWTVotesEndpoint implements AssignmentEndpoint {
 
-  public static final String JWT_PASSWORD = TextCodec.BASE64.encode("victory");
-  private static String validUsers = "TomJerrySylvester";
+  private static final byte[] JWT_PASSWORD = newSecret();
 
   private static int totalVotes = 38929;
   private final Map<String, Vote> votes = new HashMap<>();
+
+  private static byte[] newSecret() {
+    byte[] secret = new byte[64];
+    new SecureRandom().nextBytes(secret);
+    return secret;
+  }
 
   @PostConstruct
   public void initVotes() {
@@ -100,27 +107,37 @@ public class JWTVotesEndpoint implements AssignmentEndpoint {
             totalVotes));
   }
 
-  @GetMapping("/JWT/votings/login")
-  public void login(@RequestParam("user") String user, HttpServletResponse response) {
-    if (validUsers.contains(user)) {
-      Claims claims = Jwts.claims().setIssuedAt(Date.from(Instant.now().plus(Duration.ofDays(10))));
-      claims.put("admin", "false");
+  @PostMapping("/JWT/votings/login")
+  public ResponseEntity<Map<String, String>> login(
+      Authentication authentication, HttpServletResponse response) {
+    if (isAuthenticated(authentication)) {
+      String user = authentication.getName();
+      Instant issuedAt = Instant.now();
+      Map<String, Object> claims = new HashMap<>();
+      claims.put("admin", hasAdminRole(authentication));
       claims.put("user", user);
       String token =
           Jwts.builder()
               .setClaims(claims)
+              .setIssuedAt(Date.from(issuedAt))
+              .setExpiration(Date.from(issuedAt.plus(Duration.ofMinutes(15))))
               .signWith(io.jsonwebtoken.SignatureAlgorithm.HS512, JWT_PASSWORD)
               .compact();
       Cookie cookie = new Cookie("access_token", token);
+      cookie.setHttpOnly(true);
+      cookie.setSecure(true);
+      cookie.setPath("/WebGoat");
+      cookie.setMaxAge((int) Duration.ofMinutes(15).toSeconds());
       response.addCookie(cookie);
-      response.setStatus(HttpStatus.OK.value());
-      response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-    } else {
-      Cookie cookie = new Cookie("access_token", "");
-      response.addCookie(cookie);
-      response.setStatus(HttpStatus.UNAUTHORIZED.value());
-      response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+      return ResponseEntity.ok(Map.of("user", user));
     }
+    Cookie cookie = new Cookie("access_token", "");
+    cookie.setHttpOnly(true);
+    cookie.setSecure(true);
+    cookie.setPath("/WebGoat");
+    cookie.setMaxAge(0);
+    response.addCookie(cookie);
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
   }
 
   @GetMapping("/JWT/votings")
@@ -136,10 +153,10 @@ public class JWTVotesEndpoint implements AssignmentEndpoint {
       value.setSerializationView(Views.GuestView.class);
     } else {
       try {
-        Jwt jwt = Jwts.parser().setSigningKey(JWT_PASSWORD).parse(accessToken);
+        Jwt jwt = Jwts.parser().setSigningKey(JWT_PASSWORD).parseClaimsJws(accessToken);
         Claims claims = (Claims) jwt.getBody();
         String user = (String) claims.get("user");
-        if ("Guest".equals(user) || !validUsers.contains(user)) {
+        if (!StringUtils.isNotBlank(user)) {
           value.setSerializationView(Views.GuestView.class);
         } else {
           value.setSerializationView(Views.UserView.class);
@@ -161,10 +178,10 @@ public class JWTVotesEndpoint implements AssignmentEndpoint {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     } else {
       try {
-        Jwt jwt = Jwts.parser().setSigningKey(JWT_PASSWORD).parse(accessToken);
+        Jwt jwt = Jwts.parser().setSigningKey(JWT_PASSWORD).parseClaimsJws(accessToken);
         Claims claims = (Claims) jwt.getBody();
         String user = (String) claims.get("user");
-        if (!validUsers.contains(user)) {
+        if (!StringUtils.isNotBlank(user)) {
           return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } else {
           ofNullable(votes.get(title)).ifPresent(v -> v.incrementNumberOfVotes(totalVotes));
@@ -184,9 +201,10 @@ public class JWTVotesEndpoint implements AssignmentEndpoint {
       return failed(this).feedback("jwt-invalid-token").build();
     } else {
       try {
-        Jwt jwt = Jwts.parser().setSigningKey(JWT_PASSWORD).parse(accessToken);
+        Jwt jwt = Jwts.parser().setSigningKey(JWT_PASSWORD).parseClaimsJws(accessToken);
         Claims claims = (Claims) jwt.getBody();
-        boolean isAdmin = Boolean.valueOf(String.valueOf(claims.get("admin")));
+        String user = (String) claims.get("user");
+        boolean isAdmin = Boolean.TRUE.equals(claims.get("admin")) && "Admin".equals(user);
         if (!isAdmin) {
           return failed(this).feedback("jwt-only-admin").build();
         } else {
@@ -194,8 +212,23 @@ public class JWTVotesEndpoint implements AssignmentEndpoint {
           return success(this).build();
         }
       } catch (JwtException e) {
-        return failed(this).feedback("jwt-invalid-token").output(e.toString()).build();
+        return failed(this).feedback("jwt-invalid-token").build();
       }
     }
+  }
+
+  private boolean isAuthenticated(Authentication authentication) {
+    return authentication != null
+        && authentication.isAuthenticated()
+        && !(authentication instanceof AnonymousAuthenticationToken)
+        && StringUtils.isNotBlank(authentication.getName());
+  }
+
+  private boolean hasAdminRole(Authentication authentication) {
+    return authentication.getAuthorities().stream()
+        .anyMatch(
+            authority ->
+                "ROLE_ADMIN".equals(authority.getAuthority())
+                    || "ADMIN".equals(authority.getAuthority()));
   }
 }

@@ -25,7 +25,7 @@ public class UserProfile {
   //
   private void setProfileFromId(String id) {
     // emulate look up from database
-    if (id.equals("2342384")) {
+    if ("2342384".equals(id)) {
       this.userId = id;
       this.color = "yellow";
       this.name = "Tom Cat";

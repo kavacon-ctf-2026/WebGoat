@@ -1,6 +1,6 @@
 = Spoofing an Authentication Cookie
 
-Attempt to bypass the authentication mechanism by spoofing an authentication cookie.
+Observe how the secure version issues and validates an authentication cookie. The token is opaque and maps to a server-side session; changing or inventing a token must not authenticate as another user.
 
 *Notes about the login system*
 
@@ -23,8 +23,11 @@ Known credentials:
 
 |admin
 |admin
+
+|tom
+|apasswordfortom
 |===
 
 *Goal*
 
-Once you have a clear understanding of how the authentication cookie is generated, attempt to _spoof_ the cookie and log in as Tom.
+Log in as Tom with the supplied demo credentials, submit the form again to verify the issued session, and observe that a modified or guessed cookie is rejected. Use the cleanup link to invalidate the session when finished.

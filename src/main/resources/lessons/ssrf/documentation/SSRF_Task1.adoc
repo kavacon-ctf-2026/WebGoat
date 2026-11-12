@@ -1,2 +1,2 @@
-=== Find and modify the request to display Jerry
-Click the button and figure out what happened.
+=== Fixed local example
+Click the button to display Jerry from the fixed local example. The server does not fetch a URL or make an outbound request.

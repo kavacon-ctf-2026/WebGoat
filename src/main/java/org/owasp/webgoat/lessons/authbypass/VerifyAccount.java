@@ -55,7 +55,14 @@ public class VerifyAccount implements AssignmentEndpoint {
     }
 
     // else
-    if (verificationHelper.verifyAccount(Integer.valueOf(userId), (HashMap) submittedAnswers)) {
+    Integer parsedUserId;
+    try {
+      parsedUserId = Integer.valueOf(userId);
+    } catch (NumberFormatException e) {
+      return failed(this).feedback("verify-account.failed").build();
+    }
+
+    if (verificationHelper.verifyAccount(parsedUserId, (HashMap) submittedAnswers)) {
       userSessionData.setValue("account-verified-id", userId);
       return success(this).feedback("verify-account.success").build();
     } else {
@@ -68,8 +75,11 @@ public class VerifyAccount implements AssignmentEndpoint {
     List<String> paramNames = Collections.list(req.getParameterNames());
     for (String paramName : paramNames) {
       // String paramName = req.getParameterNames().nextElement();
-      if (paramName.contains("secQuestion")) {
-        userAnswers.put(paramName, req.getParameter(paramName));
+      if (paramName.matches("secQuestion[0-9]+")) {
+        String[] values = req.getParameterValues(paramName);
+        if (values != null && values.length == 1 && values[0] != null) {
+          userAnswers.put(paramName, values[0]);
+        }
       }
     }
     return (HashMap) userAnswers;

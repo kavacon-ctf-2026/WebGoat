@@ -18,5 +18,5 @@ If an attacker succeeds in "injecting" DML statements into a SQL database, he ca
 ** This statement retrieves the phone number of the employee who has the userid 96134.
 
 === It is your turn!
-Try to change the department of Tobi Barnett to 'Sales'.
-Note that you have been granted full administrator privileges in this assignment and can access all data without authentication.
+Select `Sales` to change Tobi Barnett's department.
+The application accepts only the supported department value and uses a fixed prepared statement that updates only Tobi Barnett's row. The form does not accept SQL statements.

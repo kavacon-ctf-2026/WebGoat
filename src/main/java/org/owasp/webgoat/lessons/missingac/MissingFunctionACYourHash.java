@@ -37,8 +37,11 @@ public class MissingFunctionACYourHash implements AssignmentEndpoint {
   @ResponseBody
   public AttackResult simple(String userHash) {
     User user = userRepository.findByUsername("Jerry");
+    if (user == null || userHash == null) {
+      return failed(this).build();
+    }
     DisplayUser displayUser = new DisplayUser(user, PASSWORD_SALT_SIMPLE);
-    if (userHash.equals(displayUser.getUserHash())) {
+    if (DisplayUser.matchesHash(userHash, displayUser.getUserHash())) {
       return success(this).feedback("access-control.hash.success").build();
     } else {
       return failed(this).build();

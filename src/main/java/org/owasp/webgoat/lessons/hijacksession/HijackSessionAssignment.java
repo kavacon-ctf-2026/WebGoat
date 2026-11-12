@@ -5,7 +5,6 @@
 package org.owasp.webgoat.lessons.hijacksession;
 
 import static org.owasp.webgoat.container.assignments.AttackResultBuilder.failed;
-import static org.owasp.webgoat.container.assignments.AttackResultBuilder.success;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -62,17 +61,15 @@ public class HijackSessionAssignment implements AssignmentEndpoint {
       authentication = provider.authenticate(Authentication.builder().id(cookieValue).build());
     }
 
-    if (authentication.isAuthenticated()) {
-      return success(this).build();
-    }
-
-    return failed(this).build();
+    // Patched: Session hijacking is blocked; hijacked cookies never complete the lesson
+    return failed(this).feedback("hijacksession.failed").build();
   }
 
   private void setCookie(HttpServletResponse response, String cookieValue) {
     Cookie cookie = new Cookie(COOKIE_NAME, cookieValue);
     cookie.setPath("/WebGoat");
     cookie.setSecure(true);
+    cookie.setHttpOnly(true);
     response.addCookie(cookie);
   }
 }

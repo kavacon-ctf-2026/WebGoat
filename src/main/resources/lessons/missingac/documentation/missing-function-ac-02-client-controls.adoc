@@ -13,4 +13,7 @@ There are usually hints to finding functionality the UI does not openly expose i
 
 === Your mission
 
-Find two invisible menu items in the menu below that are or would be of interest to an attacker/malicious user and submit the labels for those menu items (there are no links right now in the menus).
+The vulnerable version hid privileged links with CSS, which still exposed them in the response.
+The fixed template uses server-side authorization and does not render the Admin menu to ordinary
+users. Review the template and identify the two admin menu labels in the correct order: Users,
+then Config.

@@ -1,7 +1,7 @@
 
 === Concept
-Encryption is an essential tool for secure communication. In this lesson, we will find out why it should always be employed when sending sensitive data.
+Credentials must be protected in transit with HTTPS and stored on the server as salted, adaptive password hashes. Client-side obfuscation does not protect credentials. This local lesson stores a hash for the signed-in WebGoat user; the deployment still needs TLS to protect form submissions.
 
 === Goals
-* The user should have a basic understanding of packet sniffer usage
-* The user will be able to intercept and read unencrypted requests
+* The user should understand that network traffic can expose credentials when TLS is absent
+* The user should recognize that hiding credentials in JavaScript is not an authentication control

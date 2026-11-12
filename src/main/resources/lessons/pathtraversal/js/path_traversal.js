@@ -57,7 +57,14 @@ webgoat.customjs.profileUploadCallbackRetrieval = function () {
 
 function newRandomPicture() {
     $.get("PathTraversal/random-picture", function (result, status) {
-        document.getElementById("randomCatPicture").src = "data:image/png;base64," + result;
+        document.getElementById("randomCatPicture").src = "data:image/jpeg;base64," + result;
+    });
+}
+
+function showSelectedPicture() {
+    var id = document.getElementById("pathTraversalPictureId").value;
+    $.get("PathTraversal/random-picture", {id: id}, function (result, status) {
+        document.getElementById("randomCatPicture").src = "data:image/jpeg;base64," + result;
     });
 }
 

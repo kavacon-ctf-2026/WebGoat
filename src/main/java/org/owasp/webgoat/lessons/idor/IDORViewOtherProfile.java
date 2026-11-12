@@ -43,7 +43,7 @@ public class IDORViewOtherProfile implements AssignmentEndpoint {
   public AttackResult completed(@PathVariable("userId") String userId) {
 
     Object obj = userSessionData.getValue("idor-authenticated-as");
-    if (obj != null && obj.equals("tom")) {
+    if ("tom".equals(obj)) {
       // going to use session auth to view this one
       String authUserId = (String) userSessionData.getValue("idor-authenticated-user-id");
       if (userId != null && !userId.equals(authUserId)) {
@@ -52,7 +52,7 @@ public class IDORViewOtherProfile implements AssignmentEndpoint {
         // secure code would ensure there was a horizontal access control check prior to dishing up
         // the requested profile
         if (requestedProfile.getUserId() != null
-            && requestedProfile.getUserId().equals("2342388")) {
+            && requestedProfile.getUserId().equals(authUserId)) {
           return success(this)
               .feedback("idor.view.profile.success")
               .output(requestedProfile.profileToMap().toString())

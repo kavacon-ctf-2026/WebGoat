@@ -1,5 +1,3 @@
-In this assignment try to perform an SQL injection through the ORDER BY field.
-Try to find the ip address of the `webgoat-prd` server, guessing the complete
-ip address might take too long so we give you the last part: `xxx.130.219.202`
+Sort the server list by clicking a column heading. The API accepts only the sort keys used by the page and rejects arbitrary SQL expressions.
 
-Note: The submit field of this assignment is *NOT* vulnerable to an SQL injection.
+Find the webgoat-prd server in the list and enter its displayed IP address in the form. The submission checks that address with a prepared statement.

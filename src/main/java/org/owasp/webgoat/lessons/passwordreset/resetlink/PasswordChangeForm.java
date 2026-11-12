@@ -18,7 +18,7 @@ import lombok.Setter;
 public class PasswordChangeForm {
 
   @NotNull
-  @Size(min = 6, max = 10)
+  @Size(min = 6, max = 128)
   private String password;
 
   private String resetLink;

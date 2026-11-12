@@ -11,6 +11,8 @@ import static org.owasp.webgoat.lessons.missingac.MissingFunctionAC.PASSWORD_SAL
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
 import org.owasp.webgoat.container.assignments.AssignmentHints;
 import org.owasp.webgoat.container.assignments.AttackResult;
+import org.owasp.webgoat.container.users.WebGoatUser;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -38,16 +40,27 @@ public class MissingFunctionACYourHashAdmin implements AssignmentEndpoint {
       path = "/access-control/user-hash-fix",
       produces = {"application/json"})
   @ResponseBody
-  public AttackResult admin(String userHash) {
-    // current user should be in the DB
-    // if not admin then return 403
-
+  public AttackResult admin(String userHash, Authentication authentication) {
+    if (!isAuthenticatedAdmin(authentication)) {
+      return failed(this).build();
+    }
     var user = userRepository.findByUsername("Jerry");
+    if (user == null || userHash == null) {
+      return failed(this).build();
+    }
     var displayUser = new DisplayUser(user, PASSWORD_SALT_ADMIN);
-    if (userHash.equals(displayUser.getUserHash())) {
+    if (DisplayUser.matchesHash(userHash, displayUser.getUserHash())) {
       return success(this).feedback("access-control.hash.success").build();
     } else {
       return failed(this).feedback("access-control.hash.close").build();
     }
+  }
+
+  private boolean isAuthenticatedAdmin(Authentication authentication) {
+    return authentication != null
+        && authentication.isAuthenticated()
+        && authentication.getAuthorities().stream()
+            .anyMatch(
+                authority -> WebGoatUser.ROLE_ADMIN.equals(authority.getAuthority()));
   }
 }

@@ -10,7 +10,6 @@ import io.restassured.RestAssured;
 import io.restassured.filter.log.LogDetail;
 import io.restassured.http.ContentType;
 import java.util.Map;
-import lombok.Getter;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
@@ -23,9 +22,21 @@ public abstract class IntegrationTest {
   protected final ServerUrlConfig webGoatUrlConfig = ServerUrlConfig.webGoat();
   protected final ServerUrlConfig webWolfUrlConfig = ServerUrlConfig.webWolf();
 
-  @Getter private String webGoatCookie;
-  @Getter private String webWolfCookie;
-  @Getter private final String user = "webgoat";
+  private String webGoatCookie;
+  private String webWolfCookie;
+  private final String user = "webgoat";
+
+  public String getWebGoatCookie() {
+    return webGoatCookie;
+  }
+
+  public String getWebWolfCookie() {
+    return webWolfCookie;
+  }
+
+  public String getUser() {
+    return user;
+  }
 
   @BeforeEach
   public void login() {

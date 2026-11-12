@@ -7,6 +7,8 @@ package org.owasp.webgoat.lessons.idor;
 import static org.owasp.webgoat.container.assignments.AttackResultBuilder.failed;
 import static org.owasp.webgoat.container.assignments.AttackResultBuilder.success;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
 import org.owasp.webgoat.container.assignments.AssignmentHints;
 import org.owasp.webgoat.container.assignments.AttackResult;
@@ -32,30 +34,46 @@ public class IDORViewOwnProfileAltUrl implements AssignmentEndpoint {
   @PostMapping("/IDOR/profile/alt-path")
   @ResponseBody
   public AttackResult completed(@RequestParam String url) {
-    try {
-      if (userSessionData.getValue("idor-authenticated-as").equals("tom")) {
-        // going to use session auth to view this one
-        String authUserId = (String) userSessionData.getValue("idor-authenticated-user-id");
-        // don't care about http://localhost:8080 ... just want WebGoat/
-        String[] urlParts = url.split("/");
-        if (urlParts[0].equals("WebGoat")
-            && urlParts[1].equals("IDOR")
-            && urlParts[2].equals("profile")
-            && urlParts[3].equals(authUserId)) {
-          UserProfile userProfile = new UserProfile(authUserId);
-          return success(this)
-              .feedback("idor.view.own.profile.success")
-              .output(userProfile.profileToMap().toString())
-              .build();
-        } else {
-          return failed(this).feedback("idor.view.own.profile.failure1").build();
-        }
+    if (!"tom".equals(userSessionData.getValue("idor-authenticated-as"))) {
+      return failed(this).feedback("idor.view.own.profile.failure2").build();
+    }
 
-      } else {
-        return failed(this).feedback("idor.view.own.profile.failure2").build();
+    String authUserId = (String) userSessionData.getValue("idor-authenticated-user-id");
+    if (authUserId == null || !isOwnProfilePath(url, authUserId)) {
+      return failed(this).feedback("idor.view.own.profile.failure1").build();
+    }
+
+    UserProfile userProfile = new UserProfile(authUserId);
+    return success(this)
+        .feedback("idor.view.own.profile.success")
+        .output(userProfile.profileToMap().toString())
+        .build();
+  }
+
+  private boolean isOwnProfilePath(String input, String authenticatedUserId) {
+    if (input == null || input.isBlank()) {
+      return false;
+    }
+
+    try {
+      URI uri = new URI(input.trim());
+      String rawPath = uri.getRawPath();
+      if (rawPath == null
+          || uri.getRawQuery() != null
+          || uri.getRawFragment() != null
+          || uri.getRawUserInfo() != null
+          || rawPath.indexOf('%') >= 0
+          || rawPath.indexOf('\\') >= 0
+          || !rawPath.equals(uri.normalize().getRawPath())) {
+        return false;
       }
-    } catch (Exception ex) {
-      return failed(this).output("an error occurred with your request").build();
+
+      // The lesson accepts either a relative application path or an absolute URL, but the
+      // resource path itself must be exactly the authenticated user's profile path.
+      String normalizedPath = rawPath.startsWith("/") ? rawPath.substring(1) : rawPath;
+      return normalizedPath.equals("WebGoat/IDOR/profile/" + authenticatedUserId);
+    } catch (URISyntaxException ex) {
+      return false;
     }
   }
 }

@@ -5,8 +5,7 @@
 package org.owasp.webgoat.lessons.passwordreset;
 
 import static java.util.Optional.of;
-import static org.owasp.webgoat.container.assignments.AttackResultBuilder.informationMessage;
-import static org.owasp.webgoat.container.assignments.AttackResultBuilder.success;
+import static org.owasp.webgoat.container.assignments.AttackResultBuilder.failed;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -80,16 +79,12 @@ public class SecurityQuestionAssignment implements AssignmentEndpoint {
   @PostMapping("/PasswordReset/SecurityQuestions")
   @ResponseBody
   public AttackResult completed(@RequestParam String question) {
-    var answer = of(questions.get(question));
-    if (answer.isPresent()) {
-      triedQuestions.incr(question);
-      if (triedQuestions.isComplete()) {
-        return success(this).output("<b>" + answer + "</b>").build();
-      }
-    }
-    return informationMessage(this)
-        .feedback("password-questions-one-successful")
-        .output(answer.orElse("Unknown question, please try again..."))
+    // Every question in this bank has an answer that can be guessed or looked up (see the
+    // explanations above), so none of them is accepted as an account-recovery factor any more.
+    var weakness = of(questions.getOrDefault(question, ""));
+    String reason = weakness.filter(text -> !text.isEmpty()).orElse("Unknown question.");
+    return failed(this)
+        .output("This security question is not accepted for account recovery. " + reason)
         .build();
   }
 }

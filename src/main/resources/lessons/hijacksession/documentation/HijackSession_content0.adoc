@@ -1,3 +1,8 @@
-= Hijack a Session
+This fixed lesson issues an opaque, cryptographically random `hijack_cookie` for your signed-in
+WebGoat account. The server checks that the cookie is active and belongs to that account; guessing
+another cookie does not authenticate you as its owner.
 
-In this lesson we are trying to predict the 'hijack_cookie' value. The 'hijack_cookie' is used to differentiate authenticated and anonymous users of WebGoat.
+Create your lesson session. On the first submission, the server issues a fresh cookie; submit the
+form again to verify that cookie. Compare it with a new session. The identifiers should have no
+sequence or timestamp pattern. Explain why an invalid, expired, or copied identifier does not grant
+access to another user's session.

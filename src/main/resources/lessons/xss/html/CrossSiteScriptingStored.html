@@ -18,7 +18,8 @@
 	<link rel="stylesheet" type="text/css" th:href="@{/lesson_css/stored-xss.css}"/>
 	<script th:src="@{/lesson_js/stored-xss.js}" language="JavaScript"></script>
 
-	<div class="assignment-success"><i class="fa fa-2 fa-check hidden" aria-hidden="true"></i></div>
+	<div class="assignment-success" id="stored-comment-assignment"><i class="fa fa-2 fa-check hidden" aria-hidden="true"></i></div>
+	<div class="attack-feedback" id="stored-comment-feedback" role="status"></div>
 
 	<div class="container-fluid">
 		<div class="panel post">
@@ -45,7 +46,7 @@
 			</div>
 			<div class="post-footer">
 				<div class="input-group">
-					<input class="form-control" id="commentInput" placeholder="Add a comment" type="text"/>
+					<input class="form-control" id="commentInput" placeholder="Add a comment" type="text" maxlength="2000"/>
 					<span class="input-group-addon">
                                 <i id="postComment" class="fa fa-edit" style="font-size: 20px"></i>
                             </span>

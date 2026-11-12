@@ -32,7 +32,7 @@ public class SqlOnlyInputValidation implements AssignmentEndpoint {
     if (userId.contains(" ")) {
       return failed(this).feedback("SqlOnlyInputValidation-failed").build();
     }
-    AttackResult attackResult = lesson6a.injectableQuery(userId);
+    AttackResult attackResult = lesson6a.lookupApprovedAccountSummary(userId);
     return new AttackResult(
         attackResult.isLessonCompleted(),
         attackResult.getFeedback(),

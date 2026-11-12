@@ -1,13 +1,12 @@
 $(document).ready(function () {
-    login('Jerry');
+    login();
 })
 
-function login(user) {
+function login() {
     $.ajax({
         type: 'POST',
         url: 'JWT/refresh/login',
-        contentType: "application/json",
-        data: JSON.stringify({user: user, password: "bm5nhSkxCXZkKRy4"})
+        contentType: "application/json"
     }).success(
         function (response) {
             localStorage.setItem('access_token', response['access_token']);
@@ -25,18 +24,17 @@ webgoat.customjs.addBearerToken = function () {
 
 //Dev comment: Temporarily disabled from page we need to work out the refresh token flow but for now we can go live with the checkout page
 function newToken() {
-    localStorage.getItem('refreshToken');
     $.ajax({
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('access_token')
         },
         type: 'POST',
         url: 'JWT/refresh/newToken',
-        data: JSON.stringify({refreshToken: localStorage.getItem('refresh_token')})
+        data: JSON.stringify({refresh_token: localStorage.getItem('refresh_token')})
     }).success(
-        function () {
-            localStorage.setItem('access_token', apiToken);
-            localStorage.setItem('refresh_token', refreshToken);
+        function (response) {
+            localStorage.setItem('access_token', response['access_token']);
+            localStorage.setItem('refresh_token', response['refresh_token']);
         }
     )
 }

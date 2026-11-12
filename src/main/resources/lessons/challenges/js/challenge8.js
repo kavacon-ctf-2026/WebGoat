@@ -43,7 +43,7 @@ function average() {
 
 function doVote(stars) {
     $("#voteResultMsg").hide();
-    $.get("challenge/8/vote/" + stars, function (result) {
+    $.post("challenge/8/vote/" + stars, function (result) {
         if (result["error"]) {
             $("#voteResultMsg").addClass('alert-danger alert-dismissable');
         } else {
@@ -51,7 +51,11 @@ function doVote(stars) {
         }
         $("#voteResultMsg").html(result["message"]);
         $("#voteResultMsg").show();
-    })
-    loadVotes();
-    average();
+        loadVotes();
+        average();
+    }).fail(function (xhr) {
+        $("#voteResultMsg").addClass('alert-danger alert-dismissable');
+        $("#voteResultMsg").html(xhr.responseJSON ? xhr.responseJSON.message : "Unable to vote.");
+        $("#voteResultMsg").show();
+    });
 }

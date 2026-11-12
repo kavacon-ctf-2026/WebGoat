@@ -1,13 +1,5 @@
 <!DOCTYPE html>
 
-<!--
-** Revision history (automatically added by: /challenge/7/.git/hooks)
-
-2e29cacb85ce5066b8d011bb9769b666812b2fd9 Updated copyright to 2017
-ac937c7aab89e042ca32efeb00d4ca08a95b50d6 Removed hardcoded key
-f94008f801fceb8833a30fe56a8b26976347edcf First version of WebGoat Cloud website
-
--->
 <html xmlns:th="http://www.thymeleaf.org">
 
 
@@ -23,7 +15,7 @@ f94008f801fceb8833a30fe56a8b26976347edcf First version of WebGoat Cloud website
                             <div class="text-center">
                                 <h3><i class="fa fa-lock fa-4x"></i></h3>
                                 <h2 class="text-center">Forgot Password?</h2>
-                                <p>You can reset your password here.</p>
+                                                <p>Reset your own password using a one-time link sent to your account email.</p>
                                 <div class="panel-body">
 
                                     <form id="login-form" class="attack-form" accept-charset="UNKNOWN"
@@ -35,7 +27,7 @@ f94008f801fceb8833a30fe56a8b26976347edcf First version of WebGoat Cloud website
                                                 <span class="input-group-addon"><i
                                                         class="glyphicon glyphicon-envelope color-blue"></i></span>
                                                 <input id="email" name="email" placeholder="email address"
-                                                       class="form-control" type="email"/>
+                                                       class="form-control" type="email" required=""/>
                                             </div>
                                         </div>
                                         <div class="form-group">

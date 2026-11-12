@@ -10,6 +10,9 @@ import static org.owasp.webgoat.container.assignments.AttackResultBuilder.succes
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
 import org.owasp.webgoat.container.assignments.AssignmentHints;
 import org.owasp.webgoat.container.assignments.AttackResult;
+import org.owasp.webgoat.container.users.WebGoatUser;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,11 +31,23 @@ public class MissingFunctionACHiddenMenus implements AssignmentEndpoint {
       produces = {"application/json"})
   @ResponseBody
   public AttackResult completed(String hiddenMenu1, String hiddenMenu2) {
-    if (hiddenMenu1.equals("Users") && hiddenMenu2.equals("Config")) {
+    // Missing function-level access control: the privileged menu entries were disclosed to, and
+    // accepted from, any authenticated user. The server now authorizes the function itself.
+    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+    boolean admin =
+        authentication != null
+            && authentication.isAuthenticated()
+            && authentication.getAuthorities().stream()
+                .anyMatch(authority -> WebGoatUser.ROLE_ADMIN.equals(authority.getAuthority()));
+    if (!admin) {
+      return failed(this).feedback("access-control.hidden-menus.failure").output("").build();
+    }
+
+    if ("Users".equals(hiddenMenu1) && "Config".equals(hiddenMenu2)) {
       return success(this).output("").feedback("access-control.hidden-menus.success").build();
     }
 
-    if (hiddenMenu1.equals("Config") && hiddenMenu2.equals("Users")) {
+    if ("Config".equals(hiddenMenu1) && "Users".equals(hiddenMenu2)) {
       return failed(this).output("").feedback("access-control.hidden-menus.close").build();
     }
 

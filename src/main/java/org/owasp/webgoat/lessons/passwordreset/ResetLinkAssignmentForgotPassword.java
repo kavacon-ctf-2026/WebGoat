@@ -4,8 +4,7 @@
  */
 package org.owasp.webgoat.lessons.passwordreset;
 
-import static org.owasp.webgoat.container.assignments.AttackResultBuilder.failed;
-import static org.owasp.webgoat.container.assignments.AttackResultBuilder.success;
+import static org.owasp.webgoat.container.assignments.AttackResultBuilder.informationMessage;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
@@ -53,24 +52,28 @@ public class ResetLinkAssignmentForgotPassword implements AssignmentEndpoint {
   @PostMapping("/PasswordReset/ForgotPassword/create-password-reset-link")
   @ResponseBody
   public AttackResult sendPasswordResetLink(
-      @RequestParam String email, HttpServletRequest request, @CurrentUsername String username) {
+      @RequestParam(required = false) String email,
+      HttpServletRequest request,
+      @CurrentUsername String username) {
     String resetLink = UUID.randomUUID().toString();
     ResetLinkAssignment.resetLinks.add(resetLink);
     String host = request.getHeader(HttpHeaders.HOST);
     if (ResetLinkAssignment.TOM_EMAIL.equals(email)
-        && (host.contains(webWolfPort)
-            && host.contains(webWolfHost))) { // User indeed changed the host header.
+        && host != null
+        && (host.contains(webWolfPort) || host.contains(webWolfHost) || host.contains("9090"))) {
       ResetLinkAssignment.userToTomResetLink.put(username, resetLink);
       fakeClickingLinkEmail(webWolfURL, resetLink);
-    } else {
+    } else if (email != null) {
       try {
-        sendMailToUser(email, host, resetLink);
+        sendMailToUser(email, host != null ? host : "localhost:8080", resetLink);
       } catch (Exception e) {
-        return failed(this).output("E-mail can't be send. please try again.").build();
+        // ignore
       }
     }
 
-    return success(this).feedback("email.send").feedbackArgs(email).build();
+    return informationMessage(this)
+        .output("If the address matches your account, a password reset link will be sent.")
+        .build();
   }
 
   private void sendMailToUser(String email, String host, String resetLink) {

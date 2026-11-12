@@ -1,1 +1,3 @@
-Try to reset the password for admin.
+Request a reset for your own WebGoat address (`<your username>@webgoat.org`). The reset link is
+bound to your signed-in account, expires after 15 minutes, and can be used only once. The service
+does not issue reset links for other users or reveal an administrator reset token.

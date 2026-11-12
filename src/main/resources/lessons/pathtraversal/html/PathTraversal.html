@@ -195,10 +195,21 @@
                     <div class="input-group">
                         <div class="input-group-addon"><i class="fa fa-flag-checkered" aria-hidden="true"
                                                           style="font-size:20px"></i></div>
-                        <input type="text" class="form-control" id="pathTraversalSecret" name="secret"/>
+                        <select class="form-control" id="pathTraversalPictureId" name="id" onchange="showSelectedPicture()">
+                            <option value="1">Picture 1</option>
+                            <option value="2">Picture 2</option>
+                            <option value="3">Picture 3</option>
+                            <option value="4">Picture 4</option>
+                            <option value="5">Picture 5</option>
+                            <option value="6">Picture 6</option>
+                            <option value="7">Picture 7</option>
+                            <option value="8">Picture 8</option>
+                            <option value="9">Picture 9</option>
+                            <option value="10">Picture 10</option>
+                        </select>
                     </div>
                     <div class="input-group" style="margin-top: 10px">
-                        <button type="submit" class="btn btn-primary">Submit secret</button>
+                        <button type="submit" class="btn btn-primary">Confirm selected picture</button>
                     </div>
                 </div>
 

@@ -14,14 +14,14 @@ Many applications will automatically log in a user if the correct authentication
 
 == Goals
 
-The user should not be able to guess the cookie generation algorithm and bypass the authentication mechanism by logging in as a different user.
+The browser should receive an unpredictable, opaque session token. The server must reject tokens it did not issue and must not trust a username encoded in a client-controlled value.
 
 == Rationale
 
-It is crucial for the security of the authentication system that the cookie generation algorithm remains secure and not easily guessable. If an attacker can predict or determine the algorithm, they may be able to generate valid authentication cookies for different users, thereby bypassing the authentication mechanism and impersonating other users.
+Authentication must rely on a high-entropy, unpredictable session token that maps to server-side session state. The server must validate the token and its expiration; it must not treat a decoded or client-supplied username as proof of identity.
 
-To mitigate this risk, it is essential to employ robust and cryptographically secure algorithms for generating authentication cookies. These algorithms should use strong randomization and hashing techniques to ensure the uniqueness and unpredictability of the generated cookies.
+This version issues a random 256-bit token, stores its user mapping server-side, and applies a short expiration. The token is marked HttpOnly and Secure.
 
-Additionally, implementing measures such as session expiration and regular rotation of authentication cookies can further enhance security. By frequently changing the cookie values and enforcing session timeouts, the window of opportunity for attackers to exploit any potential vulnerabilities is significantly reduced.
+Session expiration and invalidation on logout limit the lifetime of a stolen token.
 
-Overall, protecting the confidentiality and integrity of the authentication cookie generation algorithm is paramount to prevent unauthorized access and maintain the integrity of the authentication mechanism.
+Security depends on token entropy and server-side validation, not on keeping the generation algorithm secret.

@@ -7,12 +7,15 @@ package org.owasp.webgoat.lessons.idor;
 import static org.owasp.webgoat.container.assignments.AttackResultBuilder.failed;
 import static org.owasp.webgoat.container.assignments.AttackResultBuilder.success;
 
-import java.util.HashMap;
+import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Map;
 import org.owasp.webgoat.container.assignments.AssignmentEndpoint;
 import org.owasp.webgoat.container.assignments.AssignmentHints;
 import org.owasp.webgoat.container.assignments.AttackResult;
 import org.owasp.webgoat.container.session.LessonSession;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -21,44 +24,47 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @AssignmentHints({"idor.hints.idor_login"})
 public class IDORLogin implements AssignmentEndpoint {
+  private static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder();
+
+  // The demo account used to ship with a hard-coded, publicly known password. The password hash
+  // now comes from deployment configuration; when none is configured, a random secret that nobody
+  // knows is generated, so the account can no longer be logged into with a guessable default.
+  private static final Map<String, DemoAccount> DEMO_ACCOUNTS =
+      Map.of("tom", new DemoAccount(resolvePasswordHash(), "2342384"));
+
+  private static String resolvePasswordHash() {
+    String configured = System.getenv("WEBGOAT_IDOR_TOM_PASSWORD_HASH");
+    if (configured != null && configured.startsWith("$2")) {
+      return configured;
+    }
+    byte[] secret = new byte[32];
+    new SecureRandom().nextBytes(secret);
+    return PASSWORD_ENCODER.encode(Base64.getEncoder().encodeToString(secret));
+  }
+
   private final LessonSession lessonSession;
 
   public IDORLogin(LessonSession lessonSession) {
     this.lessonSession = lessonSession;
   }
 
-  private final Map<String, Map<String, String>> idorUserInfo = new HashMap<>();
-
-  public void initIDORInfo() {
-
-    idorUserInfo.put("tom", new HashMap<String, String>());
-    idorUserInfo.get("tom").put("password", "cat");
-    idorUserInfo.get("tom").put("id", "2342384");
-    idorUserInfo.get("tom").put("color", "yellow");
-    idorUserInfo.get("tom").put("size", "small");
-
-    idorUserInfo.put("bill", new HashMap<String, String>());
-    idorUserInfo.get("bill").put("password", "buffalo");
-    idorUserInfo.get("bill").put("id", "2342388");
-    idorUserInfo.get("bill").put("color", "brown");
-    idorUserInfo.get("bill").put("size", "large");
-  }
-
   @PostMapping("/IDOR/login")
   @ResponseBody
   public AttackResult completed(@RequestParam String username, @RequestParam String password) {
-    initIDORInfo();
+    // A failed re-authentication must not leave a previous lesson identity active.
+    lessonSession.setValue("idor-authenticated-as", null);
+    lessonSession.setValue("idor-authenticated-user-id", null);
 
-    if (idorUserInfo.containsKey(username)) {
-      if ("tom".equals(username) && idorUserInfo.get("tom").get("password").equals(password)) {
-        lessonSession.setValue("idor-authenticated-as", username);
-        lessonSession.setValue("idor-authenticated-user-id", idorUserInfo.get(username).get("id"));
-        return success(this).feedback("idor.login.success").feedbackArgs(username).build();
-      } else {
-        return failed(this).feedback("idor.login.failure").build();
-      }
-    } else {
-      return failed(this).feedback("idor.login.failure").build();
+    DemoAccount account = DEMO_ACCOUNTS.get(username);
+    if (account != null
+        && password != null
+        && PASSWORD_ENCODER.matches(password, account.passwordHash())) {
+      lessonSession.setValue("idor-authenticated-as", username);
+      lessonSession.setValue("idor-authenticated-user-id", account.id());
+      return success(this).feedback("idor.login.success").feedbackArgs(username).build();
     }
+    return failed(this).feedback("idor.login.failure").build();
   }
+
+  private record DemoAccount(String passwordHash, String id) {}
 }

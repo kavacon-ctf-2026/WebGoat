@@ -1,5 +1,10 @@
-== Try it out...
+== Try it out
 
-Below you see two accounts, one of Jerry and one of Tom.
-Jerry wants to remove Tom's account from Twitter, but his token can only delete his account.
-Can you try to help him and delete Toms account?
+This exercise now demonstrates the defended behavior. The sample token in the form is a
+historical token and is expired. The endpoint accepts only a server-trusted key identifier and
+the configured signing algorithm; it does not use a client-provided `kid` as a database query or
+as an arbitrary key selector.
+
+Changing the `kid`, signing algorithm, or claims invalidates the JWT signature. The endpoint
+returns a generic invalid-token response for those requests. In a real service, issue tokens
+through an authenticated identity flow and rotate the signing key through trusted configuration.

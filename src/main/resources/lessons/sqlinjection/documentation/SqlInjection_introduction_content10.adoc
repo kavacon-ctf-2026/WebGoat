@@ -1,13 +1,5 @@
-== Compromising Availability
-After successfully compromising confidentiality and integrity in the previous lessons, we are now going to compromise the third element of the CIA triad: *availability*.
+== Availability: review audit activity safely
 
-There are many different ways to violate availability.
-If an account is deleted or its password gets changed, the actual owner cannot access this account anymore.
-Attackers could also try to delete parts of the database, or even drop the whole database, in order to make the data inaccessible.
-Revoking the access rights of admins or other users is yet another way to compromise availability; this would prevent these users from accessing either specific parts of the database or even the entire database as a whole.
+Deleting an audit table would compromise availability and remove evidence needed for incident response. This exercise provides a read-only count of audit events using one of the listed filters.
 
-=== It is your turn!
-Now you are the top earner in your company.
-But do you see that?
-There seems to be a *access_log* table, where all your actions have been logged to! +
-Better go and _delete it_ completely before anyone notices.
+Select a filter and search the log. The filter is mapped to a fixed pattern and bound as a parameter. The response reports a count only; the audit table and its entries are never modified or deleted.

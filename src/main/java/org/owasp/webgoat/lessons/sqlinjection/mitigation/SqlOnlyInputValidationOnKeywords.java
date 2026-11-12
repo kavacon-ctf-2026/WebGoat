@@ -38,7 +38,7 @@ public class SqlOnlyInputValidationOnKeywords implements AssignmentEndpoint {
     if (userId.contains(" ")) {
       return failed(this).feedback("SqlOnlyInputValidationOnKeywords-failed").build();
     }
-    AttackResult attackResult = lesson6a.injectableQuery(userId);
+    AttackResult attackResult = lesson6a.lookupApprovedAccountSummary(userId);
     return new AttackResult(
         attackResult.isLessonCompleted(),
         attackResult.getFeedback(),

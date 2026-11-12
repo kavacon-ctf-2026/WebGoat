@@ -1,9 +1,5 @@
-== Try It!   String SQL injection
+== Safe string parameter practice
 
-The query in the code builds a dynamic query as seen in the previous example.  The query is built by concatenating strings making it susceptible to String SQL injection:
+SQL structure must stay under application control. This form accepts one account name from a short allowlist and binds it as a value in a fixed prepared statement.
 
-------------------------------------------------------------
-"SELECT * FROM user_data WHERE first_name = 'John' AND last_name = '" + lastName + "'";
-------------------------------------------------------------
-
-Try using the form below to retrieve all the users from the users table. You should not need to know any specific user name to get the complete list.
+Select John Smith to view the number of matching records. The response contains only a count; it never returns card numbers or other account data. A value that is not on the allowlist is rejected, and no submitted text is executed as SQL.

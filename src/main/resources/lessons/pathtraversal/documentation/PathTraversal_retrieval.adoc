@@ -1,4 +1,3 @@
-=== Retrieving other files with a path traversal
+=== Safe retrieval from a fixed picture gallery
 
-Path traversals are not limited to file uploads; when retrieving files, it can be the case that a path traversal
-is possible to retrieve other files from the system. In this assignment, try to find a file called `path-traversal-secret.jpg`
+This patched assignment accepts only picture IDs from 1 to 10 and resolves each ID to a local gallery image. Select a picture and submit to complete the demonstration. The endpoint does not accept a filesystem path, and no secret file is created or exposed. Requests containing path fragments or IDs outside the gallery are rejected.

@@ -20,4 +20,5 @@ If an attacker successfully "injects" DDL type SQL commands into a database, he 
 );
 ** This statement creates the employees example table given on page 2.
 
-Now try to modify the schema by adding the column "phone" (varchar(20)) to the table "employees". :
+The example operation for discussion is `ALTER TABLE employees ADD phone VARCHAR(20);`.
+This page is a read-only simulation. WebGoat does not accept or execute DDL supplied through the form, and no database schema will be modified. Select the phone-column preview to acknowledge the example; schema changes must be handled by trusted migration code.

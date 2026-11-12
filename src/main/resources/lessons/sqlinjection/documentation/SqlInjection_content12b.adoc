@@ -1,6 +1,5 @@
-== Input validation alone is not enough!!
+== Keyword filtering is not a SQL boundary
 
-So the last attempt to validate if the query did not contain any spaces failed, the development team went further
-into the direction of only performing input validation, can you find out where it went wrong this time?
+Removing selected SQL keywords cannot reliably make an unsafe query safe. This form accepts the allowlisted name Smith and passes it to the same fixed, parameterized lookup as the previous exercise.
 
-Read about the lesson goal link:start.mvc#lesson/SqlInjectionAdvanced.lesson/2[here].
+Submit the allowed name to see a safe row count. Even if keyword filtering changes or is bypassed, the input remains a value and cannot add SQL syntax.

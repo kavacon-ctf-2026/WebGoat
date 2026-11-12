@@ -1,11 +1,5 @@
-== Try It!   Numeric SQL injection
+== Safe numeric parameter practice
 
-The query in the code builds a dynamic query as seen in the previous example.  The query in the code builds a dynamic query by concatenating a number making it susceptible to Numeric SQL injection:
+Numeric values also need to be bound as parameters. The form accepts a known user ID and login count from allowlists, then runs a fixed query with two integer parameters.
 
---------------------------------------------------
-"SELECT * FROM user_data WHERE login_count = " + Login_Count + " AND userid = "  + User_ID;
---------------------------------------------------
-
-Using the two Input Fields below, try to retrieve all the data from the users table.
-
-Warning: Only one of these fields is susceptible to SQL Injection. You need to find out which, to successfully retrieve all the data.
+Choose user ID 102 and login count 0 to view the number of matching records. The response contains only a count, not the user's card data. Neither field can add SQL syntax to the query.

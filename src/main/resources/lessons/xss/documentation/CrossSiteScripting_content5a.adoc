@@ -1,8 +1,3 @@
 == Try It! Reflected XSS
 
-The assignment's goal is to identify which field is susceptible to XSS.
-
-It is always a good practice to validate all input on the server side. XSS can occur when unvalidated user input gets used in an HTTP response.
-In a reflected XSS attack, an attacker can craft a URL with the attack script and post it to another website, email it, or otherwise get a victim to click on it.
-
-An easy way to find out if a field is vulnerable to an XSS attack is to use the `alert()` or `console.log()` methods. Use one of them to find out which field is vulnerable.
+This exercise demonstrates the safe handling of reflected input. Enter the literal string `<script>alert(1)</script>` in the credit-card field. The purchase confirmation HTML-escapes it, so it appears as text and does not run. The assignment completes when the server recognizes the test string; completion confirms the safe output behavior rather than a successful XSS.

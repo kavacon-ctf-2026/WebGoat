@@ -66,18 +66,8 @@
                                     <i class="fa fa-user"></i> <span class="caret"></span>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-left">
-                                    <li role="presentation"><a data-toggle="dropdown" role="menuitem" tabindex="-1"
-                                                               onclick="javascript:loginVotes('Guest')"
-                                                               th:text="Guest">current</a></li>
                                     <li role="presentation"><a role="menuitem" tabindex="-1"
-                                                               onclick="javascript:loginVotes('Tom')"
-                                                               th:text="Tom">current</a></li>
-                                    <li role="presentation"><a role="menuitem" tabindex="-1"
-                                                               onclick="javascript:loginVotes('Jerry')"
-                                                               th:text="Jerry">current</a></li>
-                                    <li role="presentation"><a role="menuitem" tabindex="-1"
-                                                               onclick="javascript:loginVotes('Sylvester')"
-                                                               th:text="Sylvester">current</a></li>
+                                                               onclick="javascript:loginVotes()">Use my signed-in account</a></li>
                                 </ul>
                                 <button type="button" class="btn btn-default fa fa-refresh" title="Refresh votes"
                                         onclick="javascript:getVotings()"/>
@@ -320,9 +310,12 @@
         <div class="assignment-success"><i class="fa fa-2 fa-check hidden" aria-hidden="true"></i></div>
         <form class="attack-form" accept-charset="UNKNOWN"
               method="POST"
-              th:action="@{/JWT/jku/delete?token=eyJ0eXAiOiJKV1QiLCJqa3UiOiJodHRwczovL2NvZ25pdG8taWRwLnVzLWVhc3QtMS5hbWF6b25hd3MuY29tL3dlYmdvYXQvLndlbGwta25vd24vandrcy5qc29uIiwiYWxnIjoiUlMyNTYifQ.ewogICJpc3MiOiAiV2ViR29hdCBUb2tlbiBCdWlsZGVyIiwKICAiaWF0IjogMTUyNDIxMDkwNCwKICAiZXhwIjogMTYxODkwNTMwNCwKICAiYXVkIjogIndlYmdvYXQub3JnIiwKICAic3ViIjogImplcnJ5QHdlYmdvYXQuY29tIiwKICAidXNlcm5hbWUiOiAiSmVycnkiLAogICJFbWFpbCI6ICJqZXJyeUB3ZWJnb2F0LmNvbSIsCiAgIlJvbGUiOiBbCiAgICAiQ2F0IgogIF0KfQ.SabvRaYSCW7xI0ueca19TL1e66cJIJaxRiydK2G5lgFMIbL5gQQjE6022HEha9HcprqFXyHbtXrQWRXAp6Gjaf5zs8LUMBMARWjEr8TS43ihguarmLLmvBCoqjiZY39o4EcEjEH9xAoyIYR_Trh7kXn6JVU-8MM76l9IOcYIJ9c8LqT1ERNmbCqtI4PP0tdqCy99nHhqlxSCVXaGDF0jMHV5kjCDSHNYib9riy9xZ63Sztify-bwPqRvxmaShPYtG4BBM_WOGlg-bYTTuws-6yISMfTB5U1WBDwLr6dLU123TGO26wCVBgTKbA0KKG94-ToOcneWLOTEacEfQQOlIQ}">
+              th:action="@{/JWT/jku/delete}">
             <div class="container-fluid">
                 <div id="toast"></div>
+                <label for="jku-token">JWT signed by the configured trusted issuer</label>
+                <textarea id="jku-token" name="token" class="form-control" required=""></textarea>
+                <button type="submit" class="btn btn-primary">Verify token</button>
                 <div class="col-sm-6 col-md-4 col-lg-3 mt-4">
                     <div class="card card-inverse card-info">
                         <img th:src="@{/images/jerry.png}" class="card-img-top"></img>
